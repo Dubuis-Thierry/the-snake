@@ -1,145 +1,234 @@
 import sys, pygame
 import random
+from config import *
+
 pygame.init()
 
 clock = pygame.time.Clock()
 
-size = width, height = 600, 600
-black = 50, 14, 14
+class GameState:
+    PLAYING, GAME_OVER = 0, 1
 
-CELL_SIZE = 40
+class Color:
+    PINK = 255, 0, 196
+    GREEN = 46, 255, 95
+    BLUE = 0, 196, 255
+    GOLD = 255, 230, 0
 
+game_state = GameState.PLAYING
 
-screen = pygame.display.set_mode(size)
+player_score_display = FONT2.render("SCORE: 0", True, (200, 200, 200))
+x, y = player_score_display.get_size()
+player_score_display_position = (W_WIDTH//2-x//2, y+2)
+
+def render_score():
+    global player_score_display, player_score_display_position
+    DISPLAY.blit(player_score_display, player_score_display_position)
+
 
 class Movement:
     UP, DOWN, RIGHT, LEFT = 0, 1, 2, 3
+
 movement = random.randint(0, 3)
 
-class Board:
-    WIDTH = 15
-    HEIGHT = 15
-    game_objects = []
-    @staticmethod
-    def what_is_it_there(position_x, position_y):
-        for go in Board.game_objects:
-            if go.position_x == position_x and go.position_y == position_y:
-                return go
-        return Void()
+game_objects = []
+
+#SOUNDS
+MUSIC = pygame.mixer.Sound("bg_music.wav")
+MUSIC.play(loops=-1)
+
+EAT_SOUND =  pygame.mixer.Sound("eat.wav")
+
+GAME_OVER_SOUND = pygame.mixer.Sound("game_over.wav")
+
+def end_game():
+    global game_state
+
+    GAME_OVER_SOUND.play()
+
+    MUSIC.fadeout(10)
+
+    game_state = GameState.GAME_OVER
+    DISPLAY.fill(BG_COLOR_GAME_OVER)
+
+    render_score()
+
+    # Game over !
+    rect_x, rect_y = GAME_OVER_IMG1.get_size()
+    DISPLAY.blit(GAME_OVER_IMG1, (W_WIDTH//2 - rect_x//2, W_WIDTH//2-rect_y//2 - 20))
+
+    # Press space to play again
+    rect_x, rect_y = GAME_OVER_IMG2.get_size()
+    DISPLAY.blit(GAME_OVER_IMG2, (W_WIDTH//2 - rect_x//2, W_WIDTH//2-rect_y//2 + 30))
+
+
+def what_is_it_there(position_x, position_y):
+    """
+    Returns the object located at the given position
+    """
+    for go in game_objects:
+        if go.position_x == position_x and go.position_y == position_y:
+            return go
+    return Void()
 
 class Void:
     def __init__(self):
         self.type = "nothing"
 
-class PlayerBody:
+class Player:
     id_count = 0
+    score = 0
     def __init__(self, position_x=-1, position_y=-1, following=0):
-        self.id = PlayerBody.id_count
-        PlayerBody.id_count += 1
-        self.type = "player"
 
+        self.type = "player"
+        self.color = (200, 20, 20)
+        self.next_player = 0
+        self.following = following
+
+        # Assigning ID
+        self.ID = Player.id_count
+        Player.id_count += 1
+
+        # Setting position
         if position_x == -1:
-            self.position_x = random.randint(0, Board.WIDTH-1)
-            self.position_y = random.randint(0, Board.HEIGHT-1)
+            self.position_x = COLS//2
+            self.position_y = ROWS//2
         else:
             self.position_x, self.position_y = position_x, position_y
-
-        self.next = 0
-        self.following=following
+        
     
-    def grow(self):
-        if self.next == 0:
-            new_body = PlayerBody(self.position_x, self.position_y, self)
-            Board.game_objects.append(new_body)
-            self.next = new_body
+    def grow(self, size=1, init=True):
+        """
+        Grow after eating food
+        """
+        global player_score_display
+        # Sound
+        if init:
+            EAT_SOUND.play()
+            Player.score += size
+            player_score_display = FONT2.render("SCORE: {}".format(Player.score), True, (200, 200, 200))
+
+        # Recursion
+        if self.next_player == 0:
+            new_body = Player(self.position_x, self.position_y, self)
+            game_objects.append(new_body)
+            self.next_player = new_body
+            if size > 1:
+                new_body.grow(size - 1, False)
             return
-        self.next.grow()
-        pygame.mixer.music.load("eat.wav")
-        pygame.mixer.music.play()
+        self.next_player.grow(size, False)
 
     def change_pos(self, pos_x, pos_y):
-        if self.next != 0:
-            self.next.change_pos(self.position_x, self.position_y)
+        if self.next_player != 0:
+            self.next_player.change_pos(self.position_x, self.position_y)
         self.position_x, self.position_y = pos_x, pos_y
-    
-    def cut(self):
-        if self.next == 0:
-            Board.game_objects.remove(self)
-            self.following.next = 0
-            return
-        self.next.cut()
-        Board.game_objects.remove(self)
-        self.following.next = 0
 
     def update(self):
-        global movement
-        if self.following == 0:
+        global movement, player_score_display
+
+        if self.following == 0:  # e.g. PlayerBody is the head
             new_position_x, new_position_y = self.position_x, self.position_y
+
             # Movement
-            if movement == Movement.UP and self.position_y > 0:
+            if movement == Movement.UP:
                 new_position_y -= 1
-                if self.next != 0 and self.next.position_y == new_position_y:
+                if self.next_player != 0 and self.next_player.position_y == new_position_y:
                     new_position_y += 2
                     movement = Movement.DOWN
-            elif movement == Movement.DOWN and self.position_y < Board.HEIGHT-1:
+
+            elif movement == Movement.DOWN:
                 new_position_y += 1
-                if self.next != 0 and self.next.position_y == new_position_y:
+                if self.next_player != 0 and self.next_player.position_y == new_position_y:
                     new_position_y -= 2
                     movement = Movement.UP
-            elif movement == Movement.RIGHT and self.position_x < Board.WIDTH-1:
+
+            elif movement == Movement.RIGHT:
                 new_position_x += 1
-                if self.next != 0 and self.next.position_x == new_position_x:
+                if self.next_player != 0 and self.next_player.position_x == new_position_x:
                     new_position_x -= 2
                     movement = Movement.LEFT
-            elif movement == Movement.LEFT and self.position_x > 0:
+
+            elif movement == Movement.LEFT:
                 new_position_x -= 1
-                if self.next != 0 and self.next.position_x == new_position_x:
+                if self.next_player != 0 and self.next_player.position_x == new_position_x:
                     new_position_x += 2
                     movement = Movement.RIGHT
+
+            if new_position_y < 0 or new_position_y >= ROWS or\
+                new_position_x < 0 or new_position_x >= COLS:
+                end_game()
+
             # Collision
-            collision = Board.what_is_it_there(new_position_x, new_position_y)
+            collision = what_is_it_there(new_position_x, new_position_y)
             if collision.type == "food":
-                self.grow()
-                Board.game_objects.remove(collision)
-            elif collision.type == "player" and collision.id != self.id:
-                print("collision")
-                collision.cut()
+                self.grow(collision.value)
+                game_objects.remove(collision)
+            elif collision.type == "player" and collision.ID != self.ID:
+                end_game()
+                return
 
             self.change_pos(new_position_x, new_position_y)
 
 
         # Rendering
         pygame.draw.rect(
-            screen, (255, 10, 10),
-            (self.position_x * CELL_SIZE + 2,
-                self.position_y * CELL_SIZE + 2,
-                CELL_SIZE-4, CELL_SIZE-4)
+            DISPLAY, self.color,
+            (self.position_x * CELL_SIZE_PX + 2,
+                self.position_y * CELL_SIZE_PX + 2,
+                CELL_SIZE_PX-4, CELL_SIZE_PX-4)
         )
         if self.following == 0:
             pygame.draw.rect(
-            screen, (255, 150, 0),
-            (self.position_x * CELL_SIZE + 10,
-                self.position_y * CELL_SIZE + 10,
-                CELL_SIZE-20, CELL_SIZE-20)
+            DISPLAY, (255, 150, 0),
+            (self.position_x * CELL_SIZE_PX + 10,
+                self.position_y * CELL_SIZE_PX + 10,
+                CELL_SIZE_PX-20, CELL_SIZE_PX-20)
         )
 
 
 class Food:
     def __init__(self):
         self.type = "food"
-        self.position_x = random.randint(0, Board.WIDTH-1)
-        self.position_y = random.randint(0, Board.HEIGHT-1)
+        # Deciding value
+        v_factor = random.randint(1, 100)
+        if v_factor < 75:
+            self.value = 1
+            self.color = Color.BLUE
+        elif v_factor < 95:
+            self.value = 2
+            self.color = Color.GREEN
+        elif v_factor < 100:
+            self.value = 3
+            self.color = Color.PINK
+        else:
+            self.value = 5
+            self.color = Color.GOLD
+            
+        self.position_x = random.randint(0, COLS-1)
+        self.position_y = random.randint(0, ROWS-1)
 
     def update(self):
         # Rendering
         pygame.draw.circle(
-            screen, (10, 200, 100),
-            (self.position_x * CELL_SIZE + CELL_SIZE//2,
-                self.position_y * CELL_SIZE + CELL_SIZE//2),
-            CELL_SIZE//3
+            DISPLAY, self.color,
+            (self.position_x * CELL_SIZE_PX + CELL_SIZE_PX//2,
+                self.position_y * CELL_SIZE_PX + CELL_SIZE_PX//2),
+            CELL_SIZE_PX//3
         )
 
-Board.game_objects.append(PlayerBody())
+def restart():
+    global game_objects, game_state, movement, player_score, player_score_display
+    Player.score = 0
+    player_score_display = FONT2.render("SCORE: 0", True, (200, 200, 200))
+    render_score()
+    game_objects = [Player()]
+    game_state = GameState.PLAYING
+    MUSIC.play(loops=-1)
+    movement = random.randint(0, 3)
+
+game_objects.append(Player())
+
+
 time = 0
 last_time = time
 while 1:
@@ -148,26 +237,35 @@ while 1:
 
 
     # INPUT
-    if pygame.key.get_pressed()[pygame.K_UP]:
+    pressed_keys = pygame.key.get_pressed()
+
+    if pressed_keys[pygame.K_UP]:
         movement = Movement.UP
-    elif pygame.key.get_pressed()[pygame.K_DOWN]:
+    elif pressed_keys[pygame.K_DOWN]:
         movement = Movement.DOWN
-    elif pygame.key.get_pressed()[pygame.K_RIGHT]:
+    elif pressed_keys[pygame.K_RIGHT]:
         movement = Movement.RIGHT
-    elif pygame.key.get_pressed()[pygame.K_LEFT]:
+    elif pressed_keys[pygame.K_LEFT]:
         movement = Movement.LEFT
 
 
     # UPDATE
-    if time-last_time > 100:
+    if time - last_time > GAME_SPEED_MS and game_state == GameState.PLAYING:
         last_time = time
         if random.randint(0, 25) == 1:
-            Board.game_objects.append(Food())
+            game_objects.append(Food())
             print("food")
-        screen.fill(black)
-        for go in Board.game_objects:
+        DISPLAY.fill(BG_COLOR)
+        for go in game_objects:
             go.update()
-
+            if game_state == GameState.GAME_OVER:
+                break
+        render_score()
         pygame.display.flip()
+
+    elif game_state == GameState.GAME_OVER:
+        if pressed_keys[pygame.K_SPACE]:
+            restart()
+    
     time += clock.get_time()
-    clock.tick(60)
+    clock.tick(100)
