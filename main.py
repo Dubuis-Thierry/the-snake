@@ -226,6 +226,24 @@ def restart():
     MUSIC.play(loops=-1)
     movement = random.randint(0, 3)
 
+def draw_map():
+    color = (5, 1, 1)
+    DISPLAY.fill(BG_COLOR)
+    for i in range(ROWS):
+        pygame.draw.line(
+            DISPLAY, color, (0, i*CELL_SIZE_PX), (W_WIDTH, i*CELL_SIZE_PX)
+        )
+        pygame.draw.line(
+            DISPLAY, color, (0, (i+1)*CELL_SIZE_PX-1), (W_WIDTH, (i+1)*CELL_SIZE_PX-1)
+        )
+    for i in range(COLS):
+        pygame.draw.line(
+            DISPLAY, color, (i*CELL_SIZE_PX, 0), (i*CELL_SIZE_PX, W_HEIGHT)
+        )
+        pygame.draw.line(
+            DISPLAY, color, ((i+1)*CELL_SIZE_PX-1, 0), ((i+1)*CELL_SIZE_PX-1, W_HEIGHT)
+        )
+
 game_objects.append(Player())
 
 
@@ -255,7 +273,7 @@ while 1:
         if random.randint(0, 25) == 1:
             game_objects.append(Food())
             print("food")
-        DISPLAY.fill(BG_COLOR)
+        draw_map()
         for go in game_objects:
             go.update()
             if game_state == GameState.GAME_OVER:
