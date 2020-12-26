@@ -253,7 +253,6 @@ while 1:
     for event in pygame.event.get():
         if event.type == pygame.QUIT: sys.exit()
 
-
     # INPUT
     pressed_keys = pygame.key.get_pressed()
 
