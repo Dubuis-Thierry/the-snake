@@ -1,14 +1,15 @@
 import pygame
 pygame.init()
 
+CELL_SIZE_PX = 40
+COLS = 16
+ROWS = 16
+
 W_SIZE = W_WIDTH, W_HEIGHT = 640, 640
 BG_COLOR = 50, 14, 14
 BG_COLOR_GAME_OVER = 30, 8, 8
 
-CELL_SIZE_PX = 40
-COLS = 16
-ROWS = 16
-GAME_SPEED_MS = 100
+GAME_SPEED_MS = 110
 
 FONT1 = pygame.font.SysFont(None, 60)
 FONT2 = pygame.font.SysFont(None, 24)
