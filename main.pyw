@@ -30,11 +30,7 @@ def restart():
     game.spawn_food(2)
     game.game_state = GameState.PLAYING
     MUSIC.play(loops=-1)
-
-
-# CONFIG
-
-
+    
 
 def launch():
     restart()
@@ -100,4 +96,4 @@ def launch():
 
 
 if __name__ == "__main__":
-    launch
+    launch()
