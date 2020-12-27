@@ -1,7 +1,6 @@
 import sys, random
 
 import pygame
-pygame.init()
 
 import game
 import mydbg
@@ -10,6 +9,9 @@ from food import Food
 from constants import *
 from datamgt import *
 
+# Window setup
+pygame.init()
+pygame.display.set_caption("TT Snake")
 
 clock = pygame.time.Clock()
 
