@@ -4,13 +4,17 @@ from constants import *
 from blitmgt import *
 
 class Player:
-    movement = random.randint(0, 3)
+    movement = 4
+    movement1 = 4
+    movement2 = 4
+    
     id_count = 0
     score = 0
-    def __init__(self, position_x=-1, position_y=-1, following=0):
+    def __init__(self, position_x=-1, position_y=-1, following=0, INPUT=0, color=(200, 20, 20)):
+        self.input = INPUT
 
         self.type = "player"
-        self.color = (200, 20, 20)
+        self.color = color
         self.next_player = 0
         self.following = following
 
@@ -38,7 +42,7 @@ class Player:
 
         # Recursion
         if self.next_player == 0:
-            new_body = Player(self.position_x, self.position_y, self)
+            new_body = Player(self.position_x, self.position_y, self, color=self.color)
             game.game_objects.append(new_body)
             self.next_player = new_body
             if size > 1:
@@ -55,30 +59,33 @@ class Player:
         if self.following == 0:  # e.g. PlayerBody is the head
             new_position_x, new_position_y = self.position_x, self.position_y
 
+            if self.input == 1:
+                movement = Player.movement1
+            elif self.input == 2:
+                movement = Player.movement2
+            else:
+                movement = Player.movement
+
             # Movement
-            if Player.movement == Movement.UP:
+            if movement == Movement.UP:
                 new_position_y -= 1
                 if self.next_player != 0 and self.next_player.position_y == new_position_y:
                     new_position_y += 2
-                    movement = Movement.DOWN
 
-            elif Player.movement == Movement.DOWN:
+            elif movement == Movement.DOWN:
                 new_position_y += 1
                 if self.next_player != 0 and self.next_player.position_y == new_position_y:
                     new_position_y -= 2
-                    movement = Movement.UP
 
-            elif Player.movement == Movement.RIGHT:
+            elif movement == Movement.RIGHT:
                 new_position_x += 1
                 if self.next_player != 0 and self.next_player.position_x == new_position_x:
                     new_position_x -= 2
-                    movement = Movement.LEFT
 
-            elif Player.movement == Movement.LEFT:
+            elif movement == Movement.LEFT:
                 new_position_x -= 1
                 if self.next_player != 0 and self.next_player.position_x == new_position_x:
                     new_position_x += 2
-                    movement = Movement.RIGHT
 
             if new_position_y < 0 or new_position_y >= ROWS or\
                 new_position_x < 0 or new_position_x >= COLS:
@@ -89,6 +96,7 @@ class Player:
             if collision.type == "food":
                 self.grow(collision.value)
                 game.game_objects.remove(collision)
+                game.spawn_food(collision.value)
             elif collision.type == "player" and collision.ID != self.ID:
                 game.end_game()
                 return

@@ -2,6 +2,7 @@ from constants import *
 from blitmgt import *
 from datamgt import *
 from player import Player
+from food import Food
 
 game_objects = []
 game_state = GameState.PLAYING
@@ -21,7 +22,7 @@ def end_game():
     MUSIC.fadeout(10)
 
     game_state = GameState.GAME_OVER
-    DISPLAY.fill(BG_COLOR_GAME_OVER)
+    get_display().fill(BG_COLOR_GAME_OVER)
 
     # Game over !
     blit_centered(text_img("Game over !", "big", Color.GREY), offset_y=-20)
@@ -41,6 +42,11 @@ def end_game():
         blit_centered(text_img(f"High score: {scores.highest}", color=Color.GREY), offset_y=110)
 
 
+def spawn_food(n=1):
+    for i in range(n):
+        game_objects.append(Food())
+
+
 class Void:
     def __init__(self):
         self.type = "nothing"
@@ -58,18 +64,18 @@ def what_is_it_there(position_x, position_y):
 
 def draw_map():
     color = (5, 1, 1)
-    DISPLAY.fill(BG_COLOR)
+    get_display().fill(BG_COLOR)
     for i in range(ROWS):
         pygame.draw.line(
-            DISPLAY, color, (0, i*CELL_SIZE_PX), (W_WIDTH, i*CELL_SIZE_PX)
+            get_display(), color, (0, i*CELL_SIZE_PX), (W_WIDTH, i*CELL_SIZE_PX)
         )
         pygame.draw.line(
-            DISPLAY, color, (0, (i+1)*CELL_SIZE_PX-1), (W_WIDTH, (i+1)*CELL_SIZE_PX-1)
+            get_display(), color, (0, (i+1)*CELL_SIZE_PX-1), (W_WIDTH, (i+1)*CELL_SIZE_PX-1)
         )
     for i in range(COLS):
         pygame.draw.line(
-            DISPLAY, color, (i*CELL_SIZE_PX, 0), (i*CELL_SIZE_PX, W_HEIGHT)
+            get_display(), color, (i*CELL_SIZE_PX, 0), (i*CELL_SIZE_PX, W_HEIGHT)
         )
         pygame.draw.line(
-            DISPLAY, color, ((i+1)*CELL_SIZE_PX-1, 0), ((i+1)*CELL_SIZE_PX-1, W_HEIGHT)
+            get_display(), color, ((i+1)*CELL_SIZE_PX-1, 0), ((i+1)*CELL_SIZE_PX-1, W_HEIGHT)
         )

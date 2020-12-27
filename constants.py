@@ -2,7 +2,7 @@ import pygame
 pygame.init()
 
 class Movement:
-    UP, DOWN, RIGHT, LEFT = 0, 1, 2, 3
+    UP, DOWN, RIGHT, LEFT, NONE = 0, 1, 2, 3, 4
 
 class GameState:
     PLAYING, GAME_OVER = 0, 1
@@ -16,14 +16,16 @@ class Color:
     GREY = (240, 240, 240)
     LIGHT_GREY = (200, 200, 200)
 
+GAMEMODE = 1 # 1 = solo, 2 = duo
+
 BG_COLOR = 50, 14, 14
 BG_COLOR_GAME_OVER = 30, 8, 8
 
 CELL_SIZE_PX = 40
-COLS = 16
-ROWS = 16
+COLS = 19
+ROWS = 19
 
-W_SIZE = W_WIDTH, W_HEIGHT = 640, 640
+W_SIZE = W_WIDTH, W_HEIGHT = 760, 760
 
 
 GAME_SPEED_MS = 110
@@ -33,11 +35,14 @@ FONTS = {
     "small" : pygame.font.SysFont(None, 24)
 }
 
+def get_display():
+    global DISPLAY
+    return DISPLAY
+
 DISPLAY = pygame.display.set_mode(W_SIZE)
 
 #sfx
 MUSIC = pygame.mixer.Sound("sfx/bg_music.wav")
-MUSIC.play(loops=-1)
 
 EAT_SOUND =  pygame.mixer.Sound("sfx/eat.wav")
 
